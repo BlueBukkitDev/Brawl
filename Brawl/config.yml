@@ -1,0 +1,10 @@
+Spawn: []
+Doublejump: true
+FallDamage: false
+FireOrLavaDamage: false
+#Options include LastManStanding, BodyCount, Gladiator and TimeCrunch
+GameMode: LastManStanding
+#Only gets used if the active gamemode is BodyCount
+KillsToWin: 7
+MinimumPlayers: 2
+EffectsOnStart: []
