@@ -27,6 +27,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import dev.blue.brawl.events.PlayerCombatEvent;
+import dev.blue.brawl.events.PlayerDoubleJumpEvent;
 import dev.blue.brawl.events.PlayerEliminateEvent;
 
 public class GameListener implements Listener {
@@ -257,7 +258,11 @@ public class GameListener implements Listener {
 			p.setAllowFlight(false);
 			if(p.getGameMode() == GameMode.SURVIVAL) {
 				e.setCancelled(true);
-				p.setVelocity(p.getLocation().getDirection().multiply(1.3));
+				PlayerDoubleJumpEvent pdje = new PlayerDoubleJumpEvent(p);
+				Bukkit.getPluginManager().callEvent(pdje);
+				if(!pdje.isCancelled()) {
+					pdje.getPlayer().setVelocity(pdje.getPlayer().getLocation().getDirection().multiply(1.3));
+				}
 			}
 		}else {
 			e.getPlayer().setAllowFlight(false);
