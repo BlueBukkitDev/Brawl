@@ -16,6 +16,8 @@ import org.bukkit.scheduler.BukkitRunnable;
 import dev.blue.brawl.BrawlPlugin;
 import dev.blue.brawl.events.CountdownBeginEvent;
 import dev.blue.brawl.events.GameBeginEvent;
+import dev.blue.brawl.events.GameTerminateEvent;
+import dev.blue.brawl.events.GameWinEvent;
 
 public abstract class BaseGame {
 	protected BrawlPlugin main;
@@ -42,19 +44,33 @@ public abstract class BaseGame {
 					tryToInitiateGame();
 				}else if(gameIsRunning()) {
 					if(gameIsAbandoned()) {
-						enterStasis();
+						endGame(false);
 						return;
 					}
 					if(winConditionIsMet()) {
-						rewardWinner();
-						resetPlayers();
-						enterStasis();
+						endGame(true);
 					}
 				}
 				time++;
 			}
 		};
 		timer.runTaskTimer(main, 0, 20);
+	}
+	
+	public void endGame(boolean win) {
+		GameTerminateEvent gte = new GameTerminateEvent(win);
+		Bukkit.getPluginManager().callEvent(gte);
+		if(gte.winnerExists()) {
+			Player winner = getWinner();
+			GameWinEvent gwe = new GameWinEvent(winner, main.getUtils().getScore(winner));
+			Bukkit.getPluginManager().callEvent(gwe);
+			rewardWinner(gwe.getWinner(), gwe.getScore());
+			resetPlayers();
+			enterStasis();
+		}else {
+			resetPlayers();
+			enterStasis();
+		}
 	}
 	
 	public List<String> getContestants() {
@@ -101,13 +117,12 @@ public abstract class BaseGame {
 		clearContestants();
 	}
 	
-	public void rewardWinner() {
-		Player winner = getWinner();
+	public void rewardWinner(Player winner, int score) {
 		if(winner != null) {
-			winner.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 160, 1, false, false, false));
+			winner.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, 100, 1, false, false, false));
 			main.getUtils().incrementLevel(winner);
 			main.updateLevelDisplay(winner);
-			Bukkit.broadcastMessage("§6"+winner.getDisplayName()+" won with "+main.getUtils().getScore(winner)+" points");
+			Bukkit.broadcastMessage("§6"+winner.getDisplayName()+" won with "+score+" points");
 		}else {
 			Bukkit.broadcastMessage("§6 Game has ended with no clear winner");
 		}
