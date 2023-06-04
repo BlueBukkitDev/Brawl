@@ -277,7 +277,7 @@ public class GameListener implements Listener {
 			BigDecimal big = BigDecimal.valueOf(p.getLocation().getY());
 			big = big.subtract(new BigDecimal(big.intValue()));
 			Double yDecimal = big.doubleValue();
-			if ((!p.getLocation().getBlock().getRelative(BlockFace.DOWN).isPassable() || !p.getLocation().getBlock().isPassable()) && yDecimal < 0.1) {
+			if ((!p.getLocation().getBlock().getRelative(BlockFace.DOWN).isPassable() || !p.getLocation().getBlock().isPassable()) && yDecimal < 0.51) {
 				p.setAllowFlight(true);
 			}
 		}
