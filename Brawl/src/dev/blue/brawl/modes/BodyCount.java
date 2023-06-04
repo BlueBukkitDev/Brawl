@@ -1,5 +1,7 @@
 package dev.blue.brawl.modes;
 
+import java.util.UUID;
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -17,8 +19,8 @@ public class BodyCount extends BaseGame {
 	@Override
 	public boolean winConditionIsMet() {
 		int remainingPlayers = 0;
-		for(Player each:main.getGameTimer().getContestants()) {
-			if(each.isOnline()) {
+		for(String each:main.getGameTimer().getContestants()) {
+			if(Bukkit.getPlayer(UUID.fromString(each)) != null && Bukkit.getPlayer(UUID.fromString(each)).isOnline()) {
 				remainingPlayers++;
 			}
 		}
@@ -36,8 +38,8 @@ public class BodyCount extends BaseGame {
 	@Override
 	public Player getWinner() {
 		int remainingPlayers = 0;
-		for(Player each:main.getGameTimer().getContestants()) {
-			if(each.isOnline()) {
+		for(String each:main.getGameTimer().getContestants()) {
+			if(Bukkit.getPlayer(UUID.fromString(each)) != null && Bukkit.getPlayer(UUID.fromString(each)).isOnline()) {
 				remainingPlayers++;
 			}
 		}

@@ -18,7 +18,7 @@ public class PlayerCombatEvent extends Event implements Cancellable {
 	private Player player;
 	private Entity attacker;
 	private double damage;
-	private int combatCooldown = 10;
+	private int combatCooldown;
 	private BrawlPlugin main;
 	private static final HandlerList HANDLERS = new HandlerList();
 
@@ -36,6 +36,7 @@ public class PlayerCombatEvent extends Event implements Cancellable {
 		this.attacker = attacker;
 		this.damage = damage;
 		this.main = main;
+		combatCooldown = main.getUtils().combatCooldown;
 	}
 	
 	/**

@@ -8,3 +8,4 @@ GameMode: LastManStanding
 KillsToWin: 7
 MinimumPlayers: 2
 EffectsOnStart: []
+Scores: []

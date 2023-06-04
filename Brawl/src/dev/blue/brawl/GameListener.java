@@ -36,30 +36,30 @@ public class GameListener implements Listener {
 	}
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
-		
-		/*each.teleport(main.getUtils().spawn());
-			each.setGameMode(GameMode.SURVIVAL);
-			each.setNoDamageTicks(30);
-			main.getUtils().applyPots(each);
-			main.getUtils().resetScore(each);*/
-		
 		Player p = e.getPlayer();
 		p.teleport(main.getUtils().spawn());
 		main.getUtils().resetPots(p);
 		if(main.getConfig().getBoolean("Doublejump")) {
 			p.setAllowFlight(true);
 		}
-		if(main.getGameTimer().isContestant(p)) {//game must also still be running
+		if(main.getGameTimer().isContestant(p)) {//game must therefore also still be running
 			p.setGameMode(GameMode.SURVIVAL);
+			p.setNoDamageTicks(30);
+			AttributeInstance instance = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
+			instance.setBaseValue(16);
+			main.getSB().setupKillboard(p);
+			return;
 		}else{
+			main.getUtils().resetScore(p);
+			p.setNoDamageTicks(30);
 			if(main.getGameTimer().gameIsRunning()) {
 				p.setGameMode(GameMode.SPECTATOR);
+				main.getSB().setupKillboard(p);
 			}else {
 				p.setGameMode(GameMode.SURVIVAL);
 				main.getGameTimer().addContestant(p);
+				main.getSB().setupLeaderboard(p);
 			}
-			main.getUtils().resetScore(p);
-			p.setNoDamageTicks(30);
 		}
 		AttributeInstance instance = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		instance.setBaseValue(16);
@@ -78,12 +78,16 @@ public class GameListener implements Listener {
 				return;
 			}
 		}
-		if(e.getCause() == DamageCause.FIRE || e.getCause() == DamageCause.FIRE_TICK || e.getCause() == DamageCause.LAVA) {
+		if(e.getCause() == DamageCause.FIRE || e.getCause() == DamageCause.LAVA) {
 			if(!main.getConfig().getBoolean("FireOrLavaDamage")) {
 				e.setCancelled(true);
 				return;
 			}
-		}if(e.getCause() == DamageCause.VOID) {
+		}
+		if(e.getCause() == DamageCause.FIRE_TICK) {
+			return;
+		}
+		if(e.getCause() == DamageCause.VOID) {
 			e.setDamage(e.getDamage()*10);
 			main.getUtils().setDamageCause((Player)e.getEntity(), main.getUtils().getDamageCause((Player)e.getEntity())+"#"+e.getCause().toString());
 		}
@@ -236,6 +240,7 @@ public class GameListener implements Listener {
 					if(attacker.getUniqueId() != pee.getPlayer().getUniqueId()) {
 						main.getUtils().incrementScore(attacker);
 						attacker.sendTitle("", "§a§l+1", 0, 5, 10);
+						main.getSB().updateScore(attacker);
 					}
 				}
 			}

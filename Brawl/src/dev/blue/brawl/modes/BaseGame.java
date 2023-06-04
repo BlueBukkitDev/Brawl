@@ -23,11 +23,11 @@ public abstract class BaseGame {
 	private boolean starting = false;
 	private int time = 0;
 	private int timerTicks = 10;
-	protected List<Player> contestants;
+	protected List<String> contestants;
 	
 	public BaseGame(BrawlPlugin main) {
 		this.main = main;
-		contestants = new ArrayList<Player>();
+		contestants = new ArrayList<String>();
 		
 		BukkitRunnable timer = new BukkitRunnable() {
 			@Override
@@ -57,27 +57,32 @@ public abstract class BaseGame {
 		timer.runTaskTimer(main, 0, 20);
 	}
 	
-	public List<Player> getContestants() {
+	public List<String> getContestants() {
 		return contestants;
 	}
 	
 	public boolean isContestant(Player p) {
-		return contestants.contains(p);
+		for(String each:getContestants()) {
+			if(each.equalsIgnoreCase(p.getUniqueId().toString())) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	public void addContestant(Player p) {
-		contestants.add(p);
+		contestants.add(p.getUniqueId().toString());
 	}
 	
 	public void removeContestant(Player p) {
-		contestants.remove(p);
+		contestants.remove(p.getUniqueId().toString());
 	}
 	
-	public void addContestants(Collection<Player> players) {
+	public void addContestants(Collection<String> players) {
 		contestants.addAll(players);
 	}
 	
-	public void removeContestants(Collection<Player> players) {
+	public void removeContestants(Collection<String> players) {
 		contestants.removeAll(players);
 	}
 	
@@ -145,6 +150,7 @@ public abstract class BaseGame {
 		running = false;
 		starting = false;
 		resetPlayers();
+		main.getSB().initiateLeaderboard();
 		time = 0;
 	}
 	
@@ -152,6 +158,7 @@ public abstract class BaseGame {
 		for(Player each:Bukkit.getOnlinePlayers()) {
 			each.sendTitle("", "Waiting for players...", 0, 0, 20);
 		}
+		main.getSB().initiateLeaderboard();
 		running = false;
 		starting = false;
 		resetPlayers();
@@ -159,6 +166,7 @@ public abstract class BaseGame {
 	}
 	
 	public void initiateGame() {
+		main.getSB().initiateKillboard();
 		for(Player each:Bukkit.getOnlinePlayers()) {
 			if(each.getGameMode() == GameMode.SURVIVAL) {
 				addContestant(each);

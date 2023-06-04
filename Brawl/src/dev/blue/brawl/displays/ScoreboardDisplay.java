@@ -13,20 +13,26 @@ import dev.blue.brawl.BrawlPlugin;
 public class ScoreboardDisplay {
 	
 	private BrawlPlugin main;
-	private Scoreboard sb;
-	private Objective obj;
+	private Scoreboard leaderboard;
+	private Objective wins;
+	private Scoreboard killboard;
+	private Objective kills;
+	
 	
 	public ScoreboardDisplay(BrawlPlugin main) {
 		this.main = main;
-		sb = Bukkit.getScoreboardManager().getNewScoreboard();
-		obj = sb.registerNewObjective("score", Criteria.DUMMY, "§dMost Wins");
-		obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+		leaderboard = Bukkit.getScoreboardManager().getNewScoreboard();
+		wins = leaderboard.registerNewObjective("wins", Criteria.DUMMY, "§dMost Wins");
+		wins.setDisplaySlot(DisplaySlot.SIDEBAR);
 	}
 	
 	/**
-	 *Loops through all online players and runs setupLeaderboard() for each of them. 
+	 *Loops through all recorded scores and runs setupLeaderboard() for each of them. 
 	 **/
 	public void initiateLeaderboard() {
+		for(String each:main.getConfig().getConfigurationSection("Scores").getKeys(false)) {
+			setupLeaderboard("§6"+main.getConfig().getString("Scores."+each+".Name"), (int)Math.floor(main.getConfig().getDouble("Scores."+each+".Level")*10));
+		}
 		for(Player each:Bukkit.getOnlinePlayers()) {
 			setupLeaderboard(each);
 		}
@@ -36,20 +42,36 @@ public class ScoreboardDisplay {
 	 *Sets the scoreboard for the given player to be the leaderboard scoreboard, and sets their own level from the file. 
 	 **/
 	public void setupLeaderboard(Player p) {
-		p.setScoreboard(sb);
-		Score score = obj.getScore(p.getName());
-		score.setScore(main.getUtils().getLevel(p));
+		p.setScoreboard(leaderboard);
 	}
 	
-	public void buildScoreboard() {
+	private void setupLeaderboard(String name, int level) {
+		Score score = wins.getScore("§6"+name);
+		score.setScore(level);
+	}
+	
+	public void initiateKillboard() {
+		killboard = Bukkit.getScoreboardManager().getNewScoreboard();
+		kills = killboard.registerNewObjective("score", Criteria.DUMMY, "§dConfirmed Kills");
+		kills.setDisplaySlot(DisplaySlot.SIDEBAR);
 		for(Player each:Bukkit.getOnlinePlayers()) {
-			each.setScoreboard(sb);
-			Score score = obj.getScore(each.getName());
-			score.setScore(main.getUtils().getLevel(each));
+			each.setScoreboard(killboard);
 		}
 	}
 	
+	public void setupKillboard(Player p) {
+		p.setScoreboard(killboard);
+		Score score = kills.getScore("§6"+p.getName());
+		score.setScore(main.getUtils().getScore(p));
+	}
+	
+	public void setupKillboardAsSpectator(Player p) {
+		killboard.resetScores("§6"+p.getName());
+		p.setScoreboard(killboard);
+	}
+	
 	public void updateScore(Player p) {
-		
+		Score score = kills.getScore("§6"+p.getName());
+		score.setScore(main.getUtils().getScore(p));
 	}
 }

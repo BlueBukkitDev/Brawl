@@ -18,6 +18,7 @@ public class Utils {
 	private NamespacedKey key_attacker;
 	private NamespacedKey key_dmgclock;
 	private NamespacedKey key_dmgcause;
+	public int combatCooldown = 10;
 	
 	public Utils(BrawlPlugin main) {
 		this.main = main;
@@ -116,6 +117,7 @@ public class Utils {
 			p.getPersistentDataContainer().set(key_level, PersistentDataType.DOUBLE, getExactLevel(p)+0.1);
 			main.getConfig().set("Scores."+p.getUniqueId().toString()+".Level", getExactLevel(p));
 			main.getConfig().set("Scores."+p.getUniqueId().toString()+".Name", p.getName());
+			main.saveConfig();
 			if((p.getExp()+0.1) >= 1) {
 				p.setLevel(p.getLevel()+1);
 				p.setExp(0);
@@ -128,6 +130,9 @@ public class Utils {
 	public int getLevel(Player p) {
 		if(p != null) {
 			if(p.getPersistentDataContainer().has(key_level, PersistentDataType.DOUBLE)) {
+				main.getConfig().set("Scores."+p.getUniqueId().toString()+".Level", getExactLevel(p));
+				main.getConfig().set("Scores."+p.getUniqueId().toString()+".Name", p.getName());
+				main.saveConfig();
 				return (int)Math.floor(p.getPersistentDataContainer().get(key_level, PersistentDataType.DOUBLE));
 			}
 		}
