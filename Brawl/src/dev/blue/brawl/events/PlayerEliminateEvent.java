@@ -37,14 +37,30 @@ public class PlayerEliminateEvent extends Event implements Cancellable {
 		this.main = main;
 	}
 	
+	/**
+	 *@return The player who was eliminated
+	 **/
 	public Player getPlayer() {
 		return player;
 	}
 	
+	/**
+	 *Returns the reason for the death.</br> 
+	 *If no reason was set in the PlayerCombatEvent, it will return the most recent DamageCause.</br>
+	 *If the player died to the Void after taking damage from a different cause, this will return as follows:</br></br>
+	 *<code>DAMAGE_CAUSE$VOID</code></br></br>
+	 *This allows you to split at '<code>$</code>', allowing you to determine who caused them to die to the void. 
+	 **/
 	public String getReason() {
 		return main.getUtils().getDamageCause(player);
 	}
 	
+	/**
+	 *Gets the UUID of the entity responsible for the death. The UUID is returned instead of the entity, because often the 
+	 *killer will die and no longer exist when this event is called. Be sure to check if the entity with this UUID exists 
+	 *and is alive BEFORE referencing it. </br></br>
+	 *@return The UUID of the killer entity
+	 **/
 	public UUID getKiller() {
 		return killer;
 	}

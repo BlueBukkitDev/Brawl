@@ -90,7 +90,7 @@ public class GameListener implements Listener {
 		}
 		if(e.getCause() == DamageCause.VOID) {
 			e.setDamage(e.getDamage()*10);
-			main.getUtils().setDamageCause((Player)e.getEntity(), main.getUtils().getDamageCause((Player)e.getEntity())+"#"+e.getCause().toString());
+			main.getUtils().setDamageCause((Player)e.getEntity(), main.getUtils().getDamageCause((Player)e.getEntity())+"$"+e.getCause().toString());
 		}
 		
 		if(e.getCause() == DamageCause.ENTITY_ATTACK || e.getCause() == DamageCause.ENTITY_EXPLOSION || e.getCause() == DamageCause.ENTITY_SWEEP_ATTACK) {

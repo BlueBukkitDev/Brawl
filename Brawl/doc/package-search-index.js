@@ -1,1 +1,1 @@
-packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"dev.blue.brawl"},{"l":"dev.blue.brawl.events"}];updateSearchResults();
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"l":"dev.blue.brawl"},{"l":"dev.blue.brawl.displays"},{"l":"dev.blue.brawl.events"},{"l":"dev.blue.brawl.modes"}];updateSearchResults();
