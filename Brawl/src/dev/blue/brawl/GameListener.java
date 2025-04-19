@@ -8,6 +8,8 @@ import org.bukkit.GameMode;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.BlockFace;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
@@ -26,9 +28,11 @@ import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import dev.blue.brawl.events.GameDamageEvent;
 import dev.blue.brawl.events.PlayerCombatEvent;
 import dev.blue.brawl.events.PlayerDoubleJumpEvent;
 import dev.blue.brawl.events.PlayerEliminateEvent;
+import dev.blue.brawl.events.PlayerJoinGameEvent;
 
 public class GameListener implements Listener {
 	BrawlPlugin main;
@@ -38,26 +42,28 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
 		Player p = e.getPlayer();
-		p.teleport(main.getUtils().spawn());
+		PlayerJoinGameEvent pjge = new PlayerJoinGameEvent(main, p);
+		Bukkit.getPluginManager().callEvent(pjge);
+		p.teleport(pjge.getSpawnLocation());
 		main.getUtils().resetPots(p);
 		if(main.getConfig().getBoolean("Doublejump")) {
 			p.setAllowFlight(true);
 		}
-		if(main.getGameTimer().isContestant(p)) {//game must therefore also still be running
-			p.setGameMode(GameMode.SURVIVAL);
-			p.setNoDamageTicks(30);
+		if(main.getGameTimer().isContestant(p)) {//game must therefore also still be running, this should allow them to rejoin
+			p.setGameMode(main.playmode);
+			p.setNoDamageTicks((int) (main.getConfig().getDouble("RespawnInvulnerability")*20));
 			AttributeInstance instance = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 			instance.setBaseValue(16);
 			main.getSB().setupKillboard(p);
 			return;
 		}else{
-			main.getUtils().resetScore(p);
-			p.setNoDamageTicks(30);
+			main.getGameTimer().resetScore(p);
+			p.setNoDamageTicks((int) (main.getConfig().getDouble("RespawnInvulnerability")*20));
 			if(main.getGameTimer().gameIsRunning()) {
 				p.setGameMode(GameMode.SPECTATOR);
 				main.getSB().setupKillboard(p);
 			}else {
-				p.setGameMode(GameMode.SURVIVAL);
+				p.setGameMode(main.playmode);
 				main.getGameTimer().addContestant(p);
 				main.getSB().setupLeaderboard(p);
 			}
@@ -65,13 +71,25 @@ public class GameListener implements Listener {
 		AttributeInstance instance = p.getAttribute(Attribute.GENERIC_ATTACK_SPEED);
 		instance.setBaseValue(16);
 	}
+	
 	@EventHandler
 	public void onDmg(EntityDamageEvent e) {
-		if(!main.getGameTimer().gameIsRunning()) {
-			e.setCancelled(true);
-		}
 		if(!(e.getEntity() instanceof Player)) {
 			return;
+		}
+		GameDamageEvent gde = new GameDamageEvent(main, (Player)e.getEntity(), e.getCause(), e.getDamage());
+		Bukkit.getPluginManager().callEvent(gde);
+		if(gde.isCancelled()) {
+			e.setCancelled(true);
+		}else {
+			e.setDamage(gde.getDamage());
+		}
+	}
+	
+	@EventHandler
+	public void onGameDmg(GameDamageEvent e) {
+		if(!main.getGameTimer().gameIsRunning()) {
+			e.setCancelled(true);
 		}
 		if(e.getCause() == DamageCause.FALL) {
 			if(!main.getConfig().getBoolean("FallDamage")) {
@@ -90,18 +108,17 @@ public class GameListener implements Listener {
 		}
 		if(e.getCause() == DamageCause.VOID) {
 			e.setDamage(e.getDamage()*10);
-			main.getUtils().setDamageCause((Player)e.getEntity(), main.getUtils().getDamageCause((Player)e.getEntity())+"$"+e.getCause().toString());
+			main.getUtils().setDamageCause(e.getPlayer(), main.getUtils().getDamageCause(e.getPlayer())+"%"+e.getCause().toString());
 		}
 		
 		if(e.getCause() == DamageCause.ENTITY_ATTACK || e.getCause() == DamageCause.ENTITY_EXPLOSION || e.getCause() == DamageCause.ENTITY_SWEEP_ATTACK) {
-			return;//this should pass the event on to the entitydamageenetity event
+			return;//this should pass the event on to the entitydamageentity event
 		}
-		Player p = (Player)e.getEntity();
 		BukkitRunnable allowDmg = new BukkitRunnable() {
 			@Override
 			public void run() {
-				p.setNoDamageTicks(0);
-				p.setMaximumNoDamageTicks(0);
+				e.getPlayer().setNoDamageTicks(0);
+				e.getPlayer().setMaximumNoDamageTicks(0);
 			}
 		};
 		allowDmg.runTaskLater(main, 1);
@@ -109,17 +126,19 @@ public class GameListener implements Listener {
 		if(main.getGameTimer().gameIsStarting()) {
 			e.setCancelled(true);
 			if(e.getCause() == DamageCause.VOID) {
-				p.teleport(main.getUtils().spawn());
+				e.getPlayer().teleport(main.getGameTimer().getLobbySpawnLocation());
 			}
 		}
 		for(Player each:Bukkit.getOnlinePlayers()) {
-			if(each.getGameMode() == GameMode.SURVIVAL) {
+			if(each.getGameMode() == main.playmode) {
 				living++;
 			}
 		}
-		if(living <= 1 && main.getGameTimer().gameIsRunning()) {//This protects the final player from ever dying.
+		if(living <= 1 && main.getGameTimer().gameIsRunning() && main.getGameTimer().winConditionIsMet()) {//This protects the final player from ever dying.
 			e.setCancelled(true);
-			p.teleport(main.getUtils().spawn());//This is an issue
+			if(e.getCause() == DamageCause.VOID) {
+				e.getPlayer().teleport(main.getGameTimer().getLobbySpawnLocation());
+			}
 		}
 	}
 	@EventHandler
@@ -159,7 +178,7 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onQuit(PlayerQuitEvent e) {
 		if(main.getGameTimer().isContestant(e.getPlayer())) {
-			Bukkit.getPluginManager().callEvent(new PlayerDeathEvent(e.getPlayer(), new ArrayList<ItemStack>(), 0, 0, 0, 0, "QUIT"));
+			Bukkit.getPluginManager().callEvent(new PlayerDeathEvent(e.getPlayer(), DamageSource.builder(DamageType.OUT_OF_WORLD).build(), new ArrayList<ItemStack>(), 0, 0, 0, 0, "QUIT"));
 		}
 	}
 	
@@ -172,23 +191,31 @@ public class GameListener implements Listener {
 			//Do something fancy here
 		}
 		if(pee.isCancelled()) {
-			pee.getPlayer().teleport(main.getUtils().spawn());
-			pee.getPlayer().setGameMode(GameMode.SURVIVAL);
-			pee.getPlayer().setNoDamageTicks(40);
+			pee.getPlayer().teleport(pee.getRespawnLocation());
+			pee.getPlayer().setGameMode(main.playmode);
+			pee.getPlayer().setNoDamageTicks((int) (main.getConfig().getDouble("RespawnInvulnerability")*20));
 		}else {
 			e.setDeathMessage(pee.getDeathMessage());
 			e.setDroppedExp(0);
 			claimKill(pee, p);
 			if(main.getUtils().isLastManStanding()) {
 				main.getGameTimer().removeContestant(p);
-				pee.getPlayer().setGameMode(GameMode.SPECTATOR);
-				pee.getPlayer().teleport(main.getUtils().spawn());
+				BukkitRunnable respawn = new BukkitRunnable() {
+					@Override
+					public void run() {
+						if(main.getGameTimer().gameIsRunning()) {
+							pee.getPlayer().teleport(pee.getRespawnLocation());
+							pee.getPlayer().setGameMode(GameMode.SPECTATOR);
+						}
+					}
+				};
+				respawn.runTaskLater(main, 1);
 				if(main.getGameTimer().gameIsStarting()) {
-					pee.getPlayer().setGameMode(GameMode.SURVIVAL);
+					pee.getPlayer().setGameMode(main.playmode);
 				}
 				int living = 0;
 				for(Player each:Bukkit.getOnlinePlayers()) {
-					if(each.getGameMode() == GameMode.SURVIVAL) {
+					if(each.getGameMode() == main.playmode) {
 						living++;
 					}
 				}
@@ -200,30 +227,25 @@ public class GameListener implements Listener {
 				BukkitRunnable respawn = new BukkitRunnable() {
 					@Override
 					public void run() {
-						if(!main.getGameTimer().gameIsStarting()) {
-							pee.getPlayer().teleport(main.getUtils().spawn());
-							pee.getPlayer().setGameMode(GameMode.SURVIVAL);
-							pee.getPlayer().setNoDamageTicks(30);
+						if(main.getGameTimer().gameIsRunning()) {
+							pee.getPlayer().teleport(pee.getRespawnLocation());
+							pee.getPlayer().setGameMode(main.playmode);
+							pee.getPlayer().setNoDamageTicks((int) (main.getConfig().getDouble("RespawnInvulnerability")*20));
 						}
 					}
 				};
 				respawn.runTaskLater(main, 20);
 				if(main.getGameTimer().gameIsStarting()) {
-					pee.getPlayer().setGameMode(GameMode.SURVIVAL);
+					pee.getPlayer().setGameMode(main.playmode);
 				}
-				int living = 0;
-				for(Player each:Bukkit.getOnlinePlayers()) {
-					if(each.getGameMode() == GameMode.SURVIVAL) {
-						living++;
-					}
-				}
-				if(living <= 1) {
-					//end game instantly, as opposed to waiting for the next game tick. 
-				}
+				main.getUtils().setAttacker(p, null);//Resets their combat after death. Hopefully. 
 			}
 		}
 	}
 	
+	/**
+	 * Claim Kill only happens when a player kills another and not themselves, since suicide is not rewarded. 
+	 */
 	private void claimKill(PlayerEliminateEvent pee, Player killed) {
 		if(main.getUtils().getAttacker(pee.getPlayer()) != null) {
 			Entity entity = Bukkit.getEntity(main.getUtils().getAttacker(pee.getPlayer()));
@@ -239,7 +261,7 @@ public class GameListener implements Listener {
 				}
 				if(attacker != null) {
 					if(attacker.getUniqueId() != pee.getPlayer().getUniqueId()) {
-						main.getUtils().incrementScore(attacker);
+						main.getGameTimer().incrementScore(attacker);
 						attacker.sendTitle("", "§a§l+1", 0, 5, 10);
 						main.getSB().updateScore(attacker);
 					}
@@ -256,7 +278,7 @@ public class GameListener implements Listener {
 		if(main.getConfig().getBoolean("Doublejump")) {
 			Player p = e.getPlayer();
 			p.setAllowFlight(false);
-			if(p.getGameMode() == GameMode.SURVIVAL) {
+			if(p.getGameMode() == main.playmode) {
 				e.setCancelled(true);
 				PlayerDoubleJumpEvent pdje = new PlayerDoubleJumpEvent(p);
 				Bukkit.getPluginManager().callEvent(pdje);

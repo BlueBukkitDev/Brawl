@@ -25,4 +25,9 @@ public class LastManStanding extends BaseGame {
 		}
 		return null;
 	}
+
+	@Override
+	public void onGameStart() {
+		
+	}
 }

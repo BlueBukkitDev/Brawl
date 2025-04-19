@@ -6,9 +6,9 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="C:/Users/blueb/Desktop/Server/BuildTools/spigot-api-1.19.4-R0.1-SNAPSHOT-shaded.jar" sourcepath="C:/Users/blueb/Desktop/Server/BuildTools/spigot-api-1.19.4-R0.1-sources.jar">
+	<classpathentry kind="lib" path="C:/Users/blueb/Desktop/Server/BuildTools/1.21.1/spigot-api-1.21.1-R0.1-20241007.193101-50-shaded.jar" sourcepath="C:/Users/blueb/Desktop/Server/BuildTools/1.21.1/spigot-api-1.21.1-R0.1-20241007.193101-50-sources.jar">
 		<attributes>
-			<attribute name="javadoc_location" value="jar:file:/C:/Users/blueb/Desktop/Server/BuildTools/spigot-api-1.19.4-R0.1-javadoc.jar!/"/>
+			<attribute name="javadoc_location" value="jar:file:/C:/Users/blueb/Desktop/Server/BuildTools/1.21.1/spigot-api-1.21.1-R0.1-20241007.193101-50-javadoc.jar!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>

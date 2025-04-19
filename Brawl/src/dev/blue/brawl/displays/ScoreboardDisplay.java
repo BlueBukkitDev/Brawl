@@ -30,11 +30,13 @@ public class ScoreboardDisplay {
 	 *Loops through all recorded scores and runs setupLeaderboard() for each of them. 
 	 **/
 	public void initiateLeaderboard() {
-		for(String each:main.getConfig().getConfigurationSection("Scores").getKeys(false)) {
-			setupLeaderboard("§6"+main.getConfig().getString("Scores."+each+".Name"), (int)Math.floor(main.getConfig().getDouble("Scores."+each+".Level")*10));
-		}
-		for(Player each:Bukkit.getOnlinePlayers()) {
-			setupLeaderboard(each);
+		if(main.getConfig().getConfigurationSection("Scores") != null) {//////JERRIES EVERYWHERE PLS DONT RUN ANY CODE, also make him beeg
+			for(String each:main.getConfig().getConfigurationSection("Scores").getKeys(false)) {
+				setupLeaderboard("§6"+main.getConfig().getString("Scores."+each+".Name"), (int)Math.floor(main.getConfig().getDouble("Scores."+each+".Level")*10));
+			}
+			for(Player each:Bukkit.getOnlinePlayers()) {
+				setupLeaderboard(each);
+			}
 		}
 	}
 	
@@ -62,7 +64,7 @@ public class ScoreboardDisplay {
 	public void setupKillboard(Player p) {
 		p.setScoreboard(killboard);
 		Score score = kills.getScore("§6"+p.getName());
-		score.setScore(main.getUtils().getScore(p));
+		score.setScore(main.getGameTimer().getScore(p));
 	}
 	
 	public void setupKillboardAsSpectator(Player p) {
@@ -72,6 +74,6 @@ public class ScoreboardDisplay {
 	
 	public void updateScore(Player p) {
 		Score score = kills.getScore("§6"+p.getName());
-		score.setScore(main.getUtils().getScore(p));
+		score.setScore(main.getGameTimer().getScore(p));
 	}
 }

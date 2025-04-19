@@ -2,10 +2,18 @@ Spawn: []
 Doublejump: true
 FallDamage: false
 FireOrLavaDamage: false
-#Options include LastManStanding, BodyCount, Gladiator and TimeCrunch
+#Options include Survival, Adventure, Creative, and Spectator. I recommend Adventure for most games. 
+GamemodeDuringPlay: Adventure
+#Options include LastManStanding, BodyCount, and Hourglass (soon Gladiator)
 GameMode: LastManStanding
 #Only gets used if the active gamemode is BodyCount
 KillsToWin: 7
+#Only gets used if the active gamemode is Hourglass
+TimeToWin: 30
+#For hourglass, TimeToWin is increased by this number of seconds per additional (more than 2) player in the match
+PerPlayerTimeScaler: 12
+ResetPots: false
 MinimumPlayers: 2
+RespawnInvulnerability: 2
 EffectsOnStart: []
 Scores: []

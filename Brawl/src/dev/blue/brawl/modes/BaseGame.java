@@ -2,10 +2,12 @@ package dev.blue.brawl.modes;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
 import org.bukkit.entity.Player;
@@ -23,13 +25,15 @@ public abstract class BaseGame {
 	protected BrawlPlugin main;
 	private boolean running = false;
 	private boolean starting = false;
-	private int time = 0;
+	protected int time = 0;
 	private int timerTicks = 10;
-	protected List<String> contestants;
+	protected HashMap<String, Integer> contestants;
+	protected Location lobbySpawnLocation;
 	
 	public BaseGame(BrawlPlugin main) {
 		this.main = main;
-		contestants = new ArrayList<String>();
+		setLobbySpawnLocation(main.getUtils().spawn());
+		contestants = new HashMap<String, Integer>();
 		
 		BukkitRunnable timer = new BukkitRunnable() {
 			@Override
@@ -62,19 +66,16 @@ public abstract class BaseGame {
 		Bukkit.getPluginManager().callEvent(gte);
 		if(gte.winnerExists()) {
 			Player winner = getWinner();
-			GameWinEvent gwe = new GameWinEvent(winner, main.getUtils().getScore(winner));
+			GameWinEvent gwe = new GameWinEvent(winner, getScore(winner));
 			Bukkit.getPluginManager().callEvent(gwe);
 			rewardWinner(gwe.getWinner(), gwe.getScore());
-			resetPlayers();
-			enterStasis();
-		}else {
-			resetPlayers();
-			enterStasis();
 		}
+		resetPlayers(gte.getSpawnLocation());
+		enterStasis(gte.getSpawnLocation());
 	}
 	
 	public List<String> getContestants() {
-		return contestants;
+		return List.copyOf(contestants.keySet());
 	}
 	
 	public boolean isContestant(Player p) {
@@ -87,7 +88,7 @@ public abstract class BaseGame {
 	}
 	
 	public void addContestant(Player p) {
-		contestants.add(p.getUniqueId().toString());
+		contestants.put(p.getUniqueId().toString(), 0);
 	}
 	
 	public void removeContestant(Player p) {
@@ -95,24 +96,32 @@ public abstract class BaseGame {
 	}
 	
 	public void addContestants(Collection<String> players) {
-		contestants.addAll(players);
+		for(String each:players) {
+			contestants.put(each, 0);
+		}
 	}
 	
 	public void removeContestants(Collection<String> players) {
-		contestants.removeAll(players);
+		for(String each:players) {
+			contestants.remove(each);
+		}
 	}
 	
 	public void clearContestants() {
 		contestants.clear();
 	}
 	
-	public void resetPlayers() {
+	public void resetPlayers(Location spawn) {
 		for(Player each:Bukkit.getOnlinePlayers()) {
-			each.teleport(main.getUtils().spawn());
-			each.setGameMode(GameMode.SURVIVAL);
-			each.setNoDamageTicks(30);
+			if(spawn != null) {
+				each.teleport(spawn);
+			}else {
+				each.teleport(main.getGameTimer().lobbySpawnLocation);
+			}
+			each.setGameMode(main.playmode);
+			each.setNoDamageTicks((int) (main.getConfig().getDouble("RespawnInvulnerability")*20));
 			main.getUtils().resetPots(each);
-			main.getUtils().resetScore(each);
+			resetScore(each);
 		}
 		clearContestants();
 	}
@@ -132,6 +141,8 @@ public abstract class BaseGame {
 	
 	public abstract boolean winConditionIsMet();
 	
+	public abstract void onGameStart();
+	
 	public List<Player> getActivePlayers() {
 		List<Player> actives = new ArrayList<Player>();
 		for(Player each:Bukkit.getOnlinePlayers()) {
@@ -143,14 +154,14 @@ public abstract class BaseGame {
 	}
 	
 	public void tryToInitiateGame() {
-		GameBeginEvent gbe = new GameBeginEvent(hasEnoughPlayers());
+		GameBeginEvent gbe = new GameBeginEvent(main, hasEnoughPlayers(), getPlayablePlayers(), this);
 		Bukkit.getPluginManager().callEvent(gbe);
 		if(!gbe.isCancelled() && gbe.hasEnoughPlayers()) {
 			initiateGame();
 		}else if(!gbe.isCancelled() && !gbe.hasEnoughPlayers()) {
-			enterStasis();
+			enterStasis(gbe.getPregameSpawnLocation());
 		}else if(gbe.isCancelled()) {
-			enterStasisQuietly();
+			enterStasisQuietly(gbe.getPregameSpawnLocation());
 		}
 	}
 	
@@ -161,35 +172,33 @@ public abstract class BaseGame {
 	/**
 	 *Same as enterStasis(), except this runs no announcement. Should be called when the start event is cancelled. 
 	 **/
-	public void enterStasisQuietly() {
+	public void enterStasisQuietly(Location loc) {
 		running = false;
 		starting = false;
-		resetPlayers();
+		resetPlayers(loc);
 		main.getSB().initiateLeaderboard();
 		time = 0;
 	}
 	
-	public void enterStasis() {
+	public void enterStasis(Location loc) {
+		running = false;
 		for(Player each:Bukkit.getOnlinePlayers()) {
 			each.sendTitle("", "Waiting for players...", 0, 0, 20);
 		}
-		main.getSB().initiateLeaderboard();
-		running = false;
-		starting = false;
-		resetPlayers();
-		time = 0;
+		enterStasisQuietly(loc);
 	}
 	
 	public void initiateGame() {
 		main.getSB().initiateKillboard();
 		for(Player each:Bukkit.getOnlinePlayers()) {
-			if(each.getGameMode() == GameMode.SURVIVAL) {
+			if(each.getGameMode() == main.playmode) {
 				addContestant(each);
 			}
 		}
 		running = true;
 		starting = false;
 		time = 0;
+		onGameStart();
 	}
 	
 	public void broadcastCountdownTime() {
@@ -226,16 +235,21 @@ public abstract class BaseGame {
 	}
 	
 	public boolean playerIsActive(Player p) {
-		return p.getGameMode() == GameMode.SURVIVAL;
+		return p.getGameMode() == main.playmode;
+	}
+	
+	private List<Player> getPlayablePlayers() {
+		List<Player> players = new ArrayList<Player>();
+		for(Player each:Bukkit.getOnlinePlayers()) {
+			if(each.getGameMode() != GameMode.CREATIVE) {
+				players.add(each);
+			}
+		}
+		return players;
 	}
 	
 	public boolean hasEnoughPlayers() {
-		int playablePlayers = 0;
-		for(Player each:Bukkit.getOnlinePlayers()) {
-			if(each.getGameMode() != GameMode.CREATIVE) {
-				playablePlayers ++;
-			}
-		}
+		int playablePlayers = getPlayablePlayers().size();
 		if((time > 2*60 || Bukkit.getOnlinePlayers().size() >= main.minimumPlayers) && playablePlayers > 1) {
 			return true;
 		}
@@ -248,5 +262,41 @@ public abstract class BaseGame {
 	
 	public boolean gameIsStarting() {
 		return starting;
+	}
+
+	public Location getLobbySpawnLocation() {
+		return lobbySpawnLocation;
+	}
+
+	/**
+	 *Set this value if you want to control where the players spawn in by default after death, on game start, on void damage, etc. 
+	 **/
+	public void setLobbySpawnLocation(Location lobbySpawnLocation) {
+		this.lobbySpawnLocation = lobbySpawnLocation;
+	}
+	
+	public void incrementScore(Player p) {
+		if(p != null && contestants.containsKey(p.getUniqueId().toString())) {
+			contestants.put(p.getUniqueId().toString(), getScore(p)+1);
+		}
+	}
+	
+	public void incrementScore(Player p, int score) {
+		if(p != null && contestants.containsKey(p.getUniqueId().toString())) {
+			contestants.put(p.getUniqueId().toString(), getScore(p)+score);
+		}
+	}
+	
+	public int getScore(Player p) {
+		if(p != null && contestants.containsKey(p.getUniqueId().toString())) {
+			return contestants.get(p.getUniqueId().toString());
+		}
+		return 0;
+	}
+	
+	public void resetScore(Player p) {
+		if(p != null && contestants.containsKey(p.getUniqueId().toString())) {
+			contestants.put(p.getUniqueId().toString(), 0);
+		}
 	}
 }

@@ -13,8 +13,6 @@ import org.bukkit.potion.PotionEffect;
 
 public class Utils {
 	private BrawlPlugin main;
-	private NamespacedKey key_score;
-	private NamespacedKey key_level;
 	private NamespacedKey key_attacker;
 	private NamespacedKey key_dmgclock;
 	private NamespacedKey key_dmgcause;
@@ -22,8 +20,6 @@ public class Utils {
 	
 	public Utils(BrawlPlugin main) {
 		this.main = main;
-		key_score = new NamespacedKey(main, "brawl-score");
-		key_level = new NamespacedKey(main, "brawl-level");
 		key_attacker = new NamespacedKey(main, "brawl-attacker");
 		key_dmgclock = new NamespacedKey(main, "brawl-dmgclock");
 		key_dmgcause = new NamespacedKey(main, "brawl-dmgcause");
@@ -45,6 +41,10 @@ public class Utils {
 	
 	public boolean isBodyCount() {
 		return main.getConfig().getString("GameMode").equalsIgnoreCase("BodyCount");
+	}
+	
+	public boolean isHourglass() {
+		return main.getConfig().getString("GameMode").equalsIgnoreCase("Hourglass");
 	}
 	
 	public void incrementDamageClock(Player p) {
@@ -93,59 +93,30 @@ public class Utils {
 		}
 	}
 	
-	public void incrementScore(Player p) {
-		if(p != null) {
-			p.getPersistentDataContainer().set(key_score, PersistentDataType.INTEGER, getScore(p)+1);
-		}
-	}
-	
-	public int getScore(Player p) {
-		if(p != null) {
-			return p.getPersistentDataContainer().get(key_score, PersistentDataType.INTEGER);
-		}
-		return 0;
-	}
-	
-	public void resetScore(Player p) {
-		if(p != null) {
-			p.getPersistentDataContainer().set(key_score, PersistentDataType.INTEGER, 0);
-		}
-	}
-	
 	public void incrementLevel(Player p) {
 		if(p != null) {
-			p.getPersistentDataContainer().set(key_level, PersistentDataType.DOUBLE, getExactLevel(p)+0.1);
-			main.getConfig().set("Scores."+p.getUniqueId().toString()+".Level", getExactLevel(p));
+			main.getConfig().set("Scores."+p.getUniqueId().toString()+".Wins", getLevel(p)+1);
 			main.getConfig().set("Scores."+p.getUniqueId().toString()+".Name", p.getName());
 			main.saveConfig();
-			if((p.getExp()+0.1) >= 1) {
-				p.setLevel(p.getLevel()+1);
-				p.setExp(0);
-				return;
-			}
-			p.setExp((float)(p.getExp()+0.1));
+			//if((p.getExp()+0.1) >= 1) {
+			//	p.setLevel(p.getLevel()+1);
+			//	p.setExp(0);
+			//	return;
+			//}
+			//p.setExp((float)(p.getExp()+0.1));
 		}
 	}
 	
 	public int getLevel(Player p) {
 		if(p != null) {
-			if(p.getPersistentDataContainer().has(key_level, PersistentDataType.DOUBLE)) {
-				main.getConfig().set("Scores."+p.getUniqueId().toString()+".Level", getExactLevel(p));
+			if(main.getConfig().getConfigurationSection("Scores."+p.getUniqueId().toString()) == null) {
+				main.getConfig().set("Scores."+p.getUniqueId().toString()+".Wins", 0);
 				main.getConfig().set("Scores."+p.getUniqueId().toString()+".Name", p.getName());
 				main.saveConfig();
-				return (int)Math.floor(p.getPersistentDataContainer().get(key_level, PersistentDataType.DOUBLE));
 			}
+			return (int) Math.floor(main.getConfig().getDouble("Scores."+p.getUniqueId().toString()+".Wins"));
 		}
 		return 0;
-	}
-	
-	public double getExactLevel(Player p) {
-		if(p != null) {
-			if(p.getPersistentDataContainer().has(key_level, PersistentDataType.DOUBLE)) {
-				return p.getPersistentDataContainer().get(key_level, PersistentDataType.DOUBLE);
-			}
-		}
-		return 0.0;
 	}
 	
 	public Location spawn() {
@@ -157,6 +128,9 @@ public class Utils {
 	
 	@SuppressWarnings("unchecked")
 	public void resetPots(Player p) {
+		if(!main.getConfig().getBoolean("ResetPots")) {
+			return;
+		}
 		for (PotionEffect each : p.getActivePotionEffects()) {
 	        p.removePotionEffect(each.getType());
 		}

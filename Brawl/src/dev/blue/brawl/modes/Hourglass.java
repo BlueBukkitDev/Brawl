@@ -7,13 +7,17 @@ import org.bukkit.entity.Player;
 
 import dev.blue.brawl.BrawlPlugin;
 
-public class BodyCount extends BaseGame {
-	
-	private int killsToWin;
+public class Hourglass extends BaseGame {
+	private int timeToWin;
 
-	public BodyCount(BrawlPlugin main) {
+	public Hourglass(BrawlPlugin main) {
 		super(main);
-		killsToWin = main.getConfig().getInt("KillsToWin");
+		timeToWin = main.getConfig().getInt("TimeToWin")+(main.getConfig().getInt("PerPlayerTimeScaler")*main.getGameTimer().getContestants().size()-2);
+	}
+	
+	@Override
+	public void onGameStart() {
+		timeToWin = main.getConfig().getInt("TimeToWin")+(main.getConfig().getInt("PerPlayerTimeScaler")*main.getGameTimer().getContestants().size()-2);
 	}
 
 	@Override
@@ -27,10 +31,9 @@ public class BodyCount extends BaseGame {
 		if(remainingPlayers == 1) {
 			return true;
 		}
-		for(Player each:Bukkit.getOnlinePlayers()) {
-			if(getScore(each) >= killsToWin) {
-				return true;
-			}
+
+		if(time >= timeToWin) {
+			return true;
 		}
 		return false;
 	}
@@ -47,16 +50,12 @@ public class BodyCount extends BaseGame {
 			main.getGameTimer().enterStasis(lobbySpawnLocation);
 			return null;
 		}
-		for(Player each:Bukkit.getOnlinePlayers()) {
-			if(getScore(each) >= killsToWin) {
-				return each;
+		Player tentative = null;
+		for(Player each:getActivePlayers()) {
+			if(tentative == null || getScore(each) > getScore(tentative)) {
+				tentative = each;
 			}
 		}
-		return null;
-	}
-
-	@Override
-	public void onGameStart() {
-		
+		return tentative;
 	}
 }

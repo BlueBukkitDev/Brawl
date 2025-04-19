@@ -1,6 +1,7 @@
 package dev.blue.brawl;
 
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.GameRule;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -10,12 +11,14 @@ import dev.blue.brawl.displays.PrestigeDisplay;
 import dev.blue.brawl.displays.ScoreboardDisplay;
 import dev.blue.brawl.modes.BaseGame;
 import dev.blue.brawl.modes.BodyCount;
+import dev.blue.brawl.modes.Hourglass;
 import dev.blue.brawl.modes.LastManStanding;
 
 public class BrawlPlugin extends JavaPlugin {
 	private BaseGame timer;
 	private Utils utils;
 	public int minimumPlayers;
+	public GameMode playmode;
 	public PrestigeDisplay prestigeDisplay;
 	public ScoreboardDisplay scoreboardDisplay;
 	
@@ -24,15 +27,17 @@ public class BrawlPlugin extends JavaPlugin {
 		saveDefaultConfig();
 		utils = new Utils(this);
 		minimumPlayers = getConfig().getInt("MinimumPlayers");
+		playmode = GameMode.valueOf(getConfig().getString("GamemodeDuringPlay").toUpperCase());
 		setupWorld();
 		if(utils.isLastManStanding()) {
 			this.timer = new LastManStanding(this);
-		}else {
+		}else if(utils.isBodyCount()) {
 			this.timer = new BodyCount(this);
+		}else if(utils.isHourglass()){
+			this.timer = new Hourglass(this);
 		}
 		Cmds cmds = new Cmds(this);
-		getCommand("setspawn").setExecutor(cmds);
-		getCommand("setpots").setExecutor(cmds);
+		getCommand("brawl").setExecutor(cmds);
 		getServer().getPluginManager().registerEvents(new GameListener(this), this);
 		prestigeDisplay = new PrestigeDisplay(this);
 		prestigeDisplay.resetDisplays();
@@ -75,6 +80,10 @@ public class BrawlPlugin extends JavaPlugin {
 	
 	public BaseGame getGameTimer() {
 		return timer;
+	}
+	
+	public void setGameTimer(BaseGame game) {
+		this.timer = game;
 	}
 	
 	public Utils getUtils() {

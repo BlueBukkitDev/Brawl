@@ -2,6 +2,7 @@ package dev.blue.brawl.events;
 
 import java.util.UUID;
 
+import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.Event;
@@ -19,6 +20,7 @@ public class PlayerEliminateEvent extends Event implements Cancellable {
 	private UUID killer;
 	private String deathMessage;
 	private BrawlPlugin main;
+	private Location respawnLoc;
 	private static final HandlerList HANDLERS = new HandlerList();
 
 	@Override
@@ -33,6 +35,7 @@ public class PlayerEliminateEvent extends Event implements Cancellable {
 	public PlayerEliminateEvent(BrawlPlugin main, Player player, UUID uuid) {
 		this.player = player;
 		this.killer = uuid;
+		this.respawnLoc = main.getGameTimer().getLobbySpawnLocation();
 		deathMessage = "§7Player "+player.getName()+" was eliminated";
 		this.main = main;
 	}
@@ -75,6 +78,20 @@ public class PlayerEliminateEvent extends Event implements Cancellable {
 	
 	public void setDeathMessage(String message) {
 		this.deathMessage = message;
+	}
+	
+	/**
+	 *Sets the location the player will respawn. If you are using a waiting lobby without respawns, set this location to the lobby.
+	 **/
+	public void setRespawnLocation(Location loc) {
+		this.respawnLoc = loc;
+	}
+	
+	/**
+	 *@return A respawn <code>Location</code> IF that location has been set while the event was interrupted.
+	 **/
+	public Location getRespawnLocation() {
+		return respawnLoc;
 	}
 
 	@Override

@@ -3,6 +3,5 @@ name: Brawl
 version: 0.1
 api-version: 1.19
 commands: 
-  setspawn:
-  setpots:
+  brawl:
   
