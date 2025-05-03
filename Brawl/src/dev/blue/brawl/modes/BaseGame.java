@@ -75,7 +75,7 @@ public abstract class BaseGame {
 	}
 	
 	public List<String> getContestants() {
-		return List.copyOf(contestants.keySet());
+		return new ArrayList<String>(contestants.keySet());
 	}
 	
 	public boolean isContestant(Player p) {
@@ -166,7 +166,7 @@ public abstract class BaseGame {
 	}
 	
 	public boolean gameIsAbandoned() {
-		return Bukkit.getOnlinePlayers().size() <= 1;
+		return Bukkit.getOnlinePlayers().size() < main.minimumPlayers;
 	}
 	
 	/**
@@ -183,7 +183,7 @@ public abstract class BaseGame {
 	public void enterStasis(Location loc) {
 		running = false;
 		for(Player each:Bukkit.getOnlinePlayers()) {
-			each.sendTitle("", "Waiting for players...", 0, 0, 20);
+			each.sendTitle("", "§fWaiting for players...", 0, 0, 20);
 		}
 		enterStasisQuietly(loc);
 	}
@@ -250,7 +250,7 @@ public abstract class BaseGame {
 	
 	public boolean hasEnoughPlayers() {
 		int playablePlayers = getPlayablePlayers().size();
-		if((time > 2*60 || Bukkit.getOnlinePlayers().size() >= main.minimumPlayers) && playablePlayers > 1) {
+		if((time > 2*60 || Bukkit.getOnlinePlayers().size() >= main.minimumPlayers) && playablePlayers >= 1) {
 			return true;
 		}
 		return false;

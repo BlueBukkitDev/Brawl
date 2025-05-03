@@ -47,6 +47,10 @@ public class Utils {
 		return main.getConfig().getString("GameMode").equalsIgnoreCase("Hourglass");
 	}
 	
+	public boolean isCustomGame() {
+		return main.getConfig().getString("GameMode").equalsIgnoreCase("Custom");
+	}
+	
 	public void incrementDamageClock(Player p) {
 		if(!p.getPersistentDataContainer().has(key_dmgclock, PersistentDataType.INTEGER)) {
 			p.getPersistentDataContainer().set(key_dmgclock, PersistentDataType.INTEGER, 0);

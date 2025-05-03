@@ -4,7 +4,7 @@ FallDamage: false
 FireOrLavaDamage: false
 #Options include Survival, Adventure, Creative, and Spectator. I recommend Adventure for most games. 
 GamemodeDuringPlay: Adventure
-#Options include LastManStanding, BodyCount, and Hourglass (soon Gladiator)
+#Options include LastManStanding, BodyCount, and Hourglass (Custom if you are using this as an API and have a custom gamemode)
 GameMode: LastManStanding
 #Only gets used if the active gamemode is BodyCount
 KillsToWin: 7
